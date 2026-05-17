@@ -63,7 +63,6 @@ class Commander:
             final_match = re.search(r"FINAL:\s*(.+)", cleaned, re.IGNORECASE | re.DOTALL)
             if final_match:
                 final_text = final_match.group(1).strip()
-                llmlog.commander_final(final_text)
                 return {"result": final_text, "rounds": round_num + 1, "context": accumulated}
 
             dispatches = re.findall(
