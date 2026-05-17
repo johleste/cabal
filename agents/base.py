@@ -34,7 +34,7 @@ class BaseAgent:
                     f"{OLLAMA_BASE_URL}/api/generate",
                     json={"model": self.model, "prompt": full, "stream": True},
                     stream=True,
-                    timeout=(10, 120),  # (connect, inter-chunk read)
+                    timeout=(10, None),  # (connect, no read timeout — let it run)
                 )
                 resp.raise_for_status()
                 raw = ""
