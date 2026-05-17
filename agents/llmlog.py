@@ -1,6 +1,6 @@
 """
 LLM output logger. Always-on in Cabal — raw model output is the point.
-Set CABAL_QUIET=1 to suppress.
+Set CABAL_QUIET=1 to suppress stderr output; session file is always written.
 """
 import os
 import sys
@@ -17,57 +17,66 @@ _BOLD   = "\033[1m"   if _TTY else ""
 _RESET  = "\033[0m"   if _TTY else ""
 
 
-def _out(text):
+def _err(text):
     if not _QUIET:
         print(text, file=sys.stderr)
 
 
+def _ses(text):
+    try:
+        import session
+        session.write(text)
+    except Exception:
+        pass
+
+
 def agent_call(role: str, model: str, prompt_preview: str):
-    _out(f"\n{_CYAN}┌─ {role.upper()}  {_DIM}{model}{_RESET}")
-    _out(f"{_CYAN}│{_RESET}  {_DIM}{prompt_preview[:120]}{'…' if len(prompt_preview) > 120 else ''}{_RESET}")
-    # Prefix for streaming tokens
+    header = f"\n┌─ {role.upper()}  {model}\n│  {prompt_preview[:120]}{'…' if len(prompt_preview) > 120 else ''}\n│  "
+    _err(f"\n{_CYAN}┌─ {role.upper()}  {_DIM}{model}{_RESET}")
+    _err(f"{_CYAN}│{_RESET}  {_DIM}{prompt_preview[:120]}{'…' if len(prompt_preview) > 120 else ''}{_RESET}")
     if not _QUIET:
         print(f"{_CYAN}│{_RESET}  ", end="", flush=True, file=sys.stderr)
+    _ses(f"\n┌─ {role.upper()}  {model}\n│  {prompt_preview[:120]}{'…' if len(prompt_preview) > 120 else ''}\n│  ")
 
 
 def agent_token(token: str):
     if not _QUIET:
         print(token, end="", flush=True, file=sys.stderr)
+    _ses(token)
 
 
 def agent_response_end(role: str, elapsed: float):
-    _out("")  # newline after streamed tokens
-    _out(f"{_CYAN}│{_RESET}  {_DIM}({elapsed:.1f}s){_RESET}")
-    _out(f"{_CYAN}└{'─' * 55}{_RESET}")
+    _err("")
+    _err(f"{_CYAN}│{_RESET}  {_DIM}({elapsed:.1f}s){_RESET}")
+    _err(f"{_CYAN}└{'─' * 55}{_RESET}")
+    _ses(f"\n│  ({elapsed:.1f}s)\n└{'─' * 55}\n")
 
 
 def commander_start(round_num: int):
-    _out(f"\n{_YELLOW}╔═ COMMANDER  round {round_num + 1} {'═' * 36}{_RESET}")
+    _err(f"\n{_YELLOW}╔═ COMMANDER  round {round_num + 1} {'═' * 36}{_RESET}")
     if not _QUIET:
         print(f"{_YELLOW}║{_RESET}  ", end="", flush=True, file=sys.stderr)
+    _ses(f"\n╔═ COMMANDER  round {round_num + 1} {'═' * 36}\n║  ")
 
 
 def commander_token(token: str):
     if not _QUIET:
         print(token, end="", flush=True, file=sys.stderr)
+    _ses(token)
 
 
 def commander_round_end():
-    _out("")
-    _out(f"{_YELLOW}╚{'═' * 55}{_RESET}")
+    _err("")
+    _err(f"{_YELLOW}╚{'═' * 55}{_RESET}")
+    _ses(f"\n╚{'═' * 55}\n")
 
 
 def commander_dispatch(agent: str, prompt: str):
     preview = prompt[:100].replace('\n', ' ')
-    _out(f"  {_GREEN}→ {agent}{_RESET}  {_DIM}{preview}{'…' if len(prompt) > 100 else ''}{_RESET}")
-
-
-def commander_final(text: str):
-    _out(f"\n{_BOLD}{_GREEN}╔═ FINAL {'═' * 47}{_RESET}")
-    for line in text.splitlines():
-        _out(f"{_BOLD}{_GREEN}║{_RESET}  {line}")
-    _out(f"{_BOLD}{_GREEN}╚{'═' * 55}{_RESET}\n")
+    _err(f"  {_GREEN}→ {agent}{_RESET}  {_DIM}{preview}{'…' if len(prompt) > 100 else ''}{_RESET}")
+    _ses(f"  → {agent}  {preview}{'…' if len(prompt) > 100 else ''}\n")
 
 
 def error(role: str, msg: str):
-    _out(f"{_RED}[{role} error]{_RESET} {msg}")
+    _err(f"{_RED}[{role} error]{_RESET} {msg}")
+    _ses(f"[{role} error] {msg}\n")

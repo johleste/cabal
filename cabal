@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
-# cabal <query>  — send a task straight to the Commander
-# Symlink to ~/.local/bin/cabal for system-wide access.
+# cabal [<subcommand>] <query>
+# With no subcommand, sends query straight to Commander (run).
+# Symlinked to ~/.local/bin/cabal for system-wide access.
+#
+# cabal "task"               → run
+# cabal pull                 → print latest session
+# cabal pull --path          → print session file path
 
 CABAL_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-exec "${CABAL_PYTHON:-python3}" "$CABAL_DIR/cabal.py" run "$@"
+PYTHON="${CABAL_PYTHON:-python3}"
+
+case "${1:-}" in
+    run|ask|research|code|recon|analyse|pull)
+        exec "$PYTHON" "$CABAL_DIR/cabal.py" "$@"
+        ;;
+    *)
+        exec "$PYTHON" "$CABAL_DIR/cabal.py" run "$@"
+        ;;
+esac

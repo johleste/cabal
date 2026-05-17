@@ -10,6 +10,8 @@ Usage:
   cabal code "task"             Direct to Coder
   cabal recon "scenario"        Direct to Recon
   cabal analyse "task"          Direct to Analyst
+  cabal pull                    Print the latest session file
+  cabal pull --path              Print the path to the latest session file
 """
 import argparse
 import sys
@@ -17,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import session
 from agents.commander import Commander
 from agents.researcher import ResearcherAgent
 from agents.coder import CoderAgent
@@ -34,29 +37,61 @@ _COMMANDER = Commander()
 
 def cmd_run(args):
     task = " ".join(args.task)
+    session.start("run", task)
     result = _COMMANDER.run(task, _AGENTS)
+    session.finish(result["result"])
     print(result["result"])
 
 
 def cmd_ask(args):
     question = " ".join(args.question)
-    print(_COMMANDER.ask(question))
+    session.start("ask", question)
+    result = _COMMANDER.ask(question)
+    session.finish(result)
+    print(result)
 
 
 def cmd_research(args):
-    print(ResearcherAgent().run(" ".join(args.task)))
+    task = " ".join(args.task)
+    session.start("research", task)
+    result = ResearcherAgent().run(task)
+    session.finish(result)
+    print(result)
 
 
 def cmd_code(args):
-    print(CoderAgent().run(" ".join(args.task)))
+    task = " ".join(args.task)
+    session.start("code", task)
+    result = CoderAgent().run(task)
+    session.finish(result)
+    print(result)
 
 
 def cmd_recon(args):
-    print(ReconAgent().run(" ".join(args.task)))
+    task = " ".join(args.task)
+    session.start("recon", task)
+    result = ReconAgent().run(task)
+    session.finish(result)
+    print(result)
 
 
 def cmd_analyse(args):
-    print(AnalystAgent().run(" ".join(args.task)))
+    task = " ".join(args.task)
+    session.start("analyse", task)
+    result = AnalystAgent().run(task)
+    session.finish(result)
+    print(result)
+
+
+def cmd_pull(args):
+    path = session.latest()
+    if not path:
+        print("[cabal] no sessions found in ./sessions/")
+        return
+    if args.path:
+        print(path)
+    else:
+        print(path.read_text())
 
 
 def main():
@@ -91,6 +126,10 @@ def main():
     ana_p = sub.add_parser("analyse", help="Direct to Analyst")
     ana_p.add_argument("task", nargs="+")
     ana_p.set_defaults(func=cmd_analyse)
+
+    pull_p = sub.add_parser("pull", help="Print the latest session output")
+    pull_p.add_argument("--path", action="store_true", help="Print file path only")
+    pull_p.set_defaults(func=cmd_pull)
 
     args = parser.parse_args()
     args.func(args)

@@ -19,7 +19,7 @@ CMD="${1:-help}"
 shift || true
 
 case "$CMD" in
-    run|ask|research|code|recon|analyse)
+    run|ask|research|code|recon|analyse|pull)
         exec "$PYTHON" "$SCRIPT_DIR/cabal.py" "$CMD" "$@"
         ;;
 
@@ -37,6 +37,8 @@ c.sh — Cabal multi-agent AI shell
   ./c.sh code "task"        Direct to Coder (deepseek-coder-v2)
   ./c.sh recon "scenario"   Direct to Recon (wizard-vicuna-uncensored)
   ./c.sh analyse "task"     Direct to Analyst (dolphin-llama3)
+  ./c.sh pull               Print the latest session file (or mid-run progress)
+  ./c.sh pull --path        Print the session file path only
   ./c.sh quiet <cmd> [args] Run any command with LLM logging suppressed
 
 LLM output is logged to stderr by default. Set CABAL_QUIET=1 to suppress.
