@@ -11,6 +11,7 @@ Dispatch protocol:
 
 Agents: RESEARCHER | CODER | RECON | ANALYST
 """
+import json
 import re
 import time
 import requests
@@ -56,8 +57,9 @@ class Commander:
         final_text = None
 
         for round_num in range(_MAX_ROUNDS):
+            llmlog.commander_start(round_num)
             raw = self._query(f"{_SYSTEM}\n\n{conversation}")
-            llmlog.commander_round(round_num, raw)
+            llmlog.commander_round_end()
             cleaned = _strip_thinking(raw)
 
             final_match = re.search(r"FINAL:\s*(.+)", cleaned, re.IGNORECASE | re.DOTALL)
@@ -108,24 +110,38 @@ class Commander:
 
     def ask(self, question: str) -> str:
         """Direct question — commander reasons without dispatching agents."""
-        raw = self._query(f"{_SYSTEM}\n\nQuestion: {question}", timeout=600)
-        llmlog.commander_round(0, raw)
+        llmlog.commander_start(0)
+        raw = self._query(f"{_SYSTEM}\n\nQuestion: {question}")
+        llmlog.commander_round_end()
         result = _strip_thinking(raw)
         result = re.sub(r"^FINAL:\s*", "", result, flags=re.IGNORECASE).strip()
         return result
 
-    def _query(self, prompt: str, timeout: int = 300) -> str:
-        try:
-            resp = requests.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={"model": self.model, "prompt": prompt, "stream": False},
-                timeout=timeout,
-            )
-            resp.raise_for_status()
-            return resp.json().get("response", "").strip()
-        except requests.exceptions.RequestException as e:
-            llmlog.error("commander", str(e))
-            return f"[commander error: {e}]"
+    def _query(self, prompt: str) -> str:
+        for attempt in range(3):
+            try:
+                resp = requests.post(
+                    f"{OLLAMA_BASE_URL}/api/generate",
+                    json={"model": self.model, "prompt": prompt, "stream": True},
+                    stream=True,
+                    timeout=(10, 120),  # (connect, inter-chunk read)
+                )
+                resp.raise_for_status()
+                raw = ""
+                for line in resp.iter_lines():
+                    if line:
+                        chunk = json.loads(line)
+                        token = chunk.get("response", "")
+                        raw += token
+                        llmlog.commander_token(token)
+                        if chunk.get("done"):
+                            break
+                return raw.strip()
+            except requests.exceptions.RequestException as e:
+                llmlog.error("commander", f"attempt {attempt+1}/3: {e}")
+                if attempt < 2:
+                    time.sleep(3)
+        return "[commander error: failed after 3 attempts]"
 
 
 def _strip_thinking(text: str) -> str:

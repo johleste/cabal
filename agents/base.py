@@ -2,6 +2,7 @@
 BaseAgent — one Ollama model, one role.
 LLM output is always logged to stderr unless CABAL_QUIET=1.
 """
+import json
 import time
 import requests
 import sys
@@ -19,7 +20,7 @@ class BaseAgent:
     def model(self) -> str:
         return MODELS.get(self.role, "llama3.1:latest")
 
-    def query(self, prompt: str, context: str = "", timeout: int = 300) -> str:
+    def query(self, prompt: str, context: str = "") -> str:
         if context:
             full = f"{self.system_prompt}\n\nContext:\n{context}\n\nInput:\n{prompt}"
         else:
@@ -27,16 +28,28 @@ class BaseAgent:
 
         llmlog.agent_call(self.role, self.model, prompt)
         t0 = time.monotonic()
-        try:
-            resp = requests.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={"model": self.model, "prompt": full, "stream": False},
-                timeout=timeout,
-            )
-            resp.raise_for_status()
-            raw = resp.json().get("response", "").strip()
-            llmlog.agent_response(self.role, time.monotonic() - t0, raw)
-            return raw
-        except requests.exceptions.RequestException as e:
-            llmlog.error(self.role, str(e))
-            return f"[{self.role} error: {e}]"
+        for attempt in range(3):
+            try:
+                resp = requests.post(
+                    f"{OLLAMA_BASE_URL}/api/generate",
+                    json={"model": self.model, "prompt": full, "stream": True},
+                    stream=True,
+                    timeout=(10, 120),  # (connect, inter-chunk read)
+                )
+                resp.raise_for_status()
+                raw = ""
+                for line in resp.iter_lines():
+                    if line:
+                        chunk = json.loads(line)
+                        token = chunk.get("response", "")
+                        raw += token
+                        llmlog.agent_token(token)
+                        if chunk.get("done"):
+                            break
+                llmlog.agent_response_end(self.role, time.monotonic() - t0)
+                return raw.strip()
+            except requests.exceptions.RequestException as e:
+                llmlog.error(self.role, f"attempt {attempt+1}/3: {e}")
+                if attempt < 2:
+                    time.sleep(3)
+        return f"[{self.role} error: failed after 3 attempts]"

@@ -25,19 +25,35 @@ def _out(text):
 def agent_call(role: str, model: str, prompt_preview: str):
     _out(f"\n{_CYAN}┌─ {role.upper()}  {_DIM}{model}{_RESET}")
     _out(f"{_CYAN}│{_RESET}  {_DIM}{prompt_preview[:120]}{'…' if len(prompt_preview) > 120 else ''}{_RESET}")
+    # Prefix for streaming tokens
+    if not _QUIET:
+        print(f"{_CYAN}│{_RESET}  ", end="", flush=True, file=sys.stderr)
 
 
-def agent_response(role: str, elapsed: float, raw: str):
+def agent_token(token: str):
+    if not _QUIET:
+        print(token, end="", flush=True, file=sys.stderr)
+
+
+def agent_response_end(role: str, elapsed: float):
+    _out("")  # newline after streamed tokens
     _out(f"{_CYAN}│{_RESET}  {_DIM}({elapsed:.1f}s){_RESET}")
-    for line in raw.splitlines():
-        _out(f"{_CYAN}│{_RESET}  {line}")
     _out(f"{_CYAN}└{'─' * 55}{_RESET}")
 
 
-def commander_round(round_num: int, raw: str):
+def commander_start(round_num: int):
     _out(f"\n{_YELLOW}╔═ COMMANDER  round {round_num + 1} {'═' * 36}{_RESET}")
-    for line in raw.splitlines():
-        _out(f"{_YELLOW}║{_RESET}  {line}")
+    if not _QUIET:
+        print(f"{_YELLOW}║{_RESET}  ", end="", flush=True, file=sys.stderr)
+
+
+def commander_token(token: str):
+    if not _QUIET:
+        print(token, end="", flush=True, file=sys.stderr)
+
+
+def commander_round_end():
+    _out("")
     _out(f"{_YELLOW}╚{'═' * 55}{_RESET}")
 
 
