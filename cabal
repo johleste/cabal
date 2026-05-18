@@ -3,9 +3,10 @@
 # With no subcommand, sends query straight to Commander (run).
 # Symlinked to ~/.local/bin/cabal for system-wide access.
 #
-# cabal "task"               → run
-# cabal pull                 → print latest session
-# cabal pull --path          → print session file path
+# cabal "task"                    → run
+# cabal "task" --rounds 20        → run with more rounds
+# cabal pull                      → print latest session
+# cabal pull --path               → print session file path
 
 CABAL_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 PYTHON="${CABAL_PYTHON:-python3}"

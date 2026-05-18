@@ -38,7 +38,7 @@ _COMMANDER = Commander()
 def cmd_run(args):
     task = " ".join(args.task)
     session.start("run", task)
-    result = _COMMANDER.run(task, _AGENTS)
+    result = _COMMANDER.run(task, _AGENTS, max_rounds=args.rounds)
     session.finish(result["result"])
     print(result["result"])
 
@@ -105,6 +105,7 @@ def main():
 
     run_p = sub.add_parser("run", help="Commander orchestrates agents")
     run_p.add_argument("task", nargs="+")
+    run_p.add_argument("--rounds", type=int, default=None, help="Max commander rounds (default: config.MAX_ROUNDS)")
     run_p.set_defaults(func=cmd_run)
 
     ask_p = sub.add_parser("ask", help="Commander answers directly")

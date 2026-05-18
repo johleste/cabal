@@ -18,10 +18,8 @@ import requests
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from config import OLLAMA_BASE_URL, MODELS
+from config import OLLAMA_BASE_URL, MODELS, MAX_ROUNDS as _DEFAULT_MAX_ROUNDS
 from agents import llmlog
-
-_MAX_ROUNDS = 4
 
 _SYSTEM = """\
 You are the Commander — the orchestrating intelligence of Cabal, a local multi-agent AI system.
@@ -51,12 +49,12 @@ class Commander:
     def model(self) -> str:
         return MODELS.get("commander", "deepseek-r1:8b")
 
-    def run(self, task: str, agents: dict) -> dict:
+    def run(self, task: str, agents: dict, max_rounds: int = None) -> dict:
+        max_rounds = max_rounds or _DEFAULT_MAX_ROUNDS
         conversation = f"Task: {task}"
         accumulated = ""
-        final_text = None
 
-        for round_num in range(_MAX_ROUNDS):
+        for round_num in range(max_rounds):
             llmlog.commander_start(round_num)
             raw = self._query(f"{_SYSTEM}\n\n{conversation}")
             llmlog.commander_round_end()
@@ -93,7 +91,7 @@ class Commander:
 
             block = "\n\n".join(agent_results)
             accumulated += "\n\n" + block
-            rounds_left = _MAX_ROUNDS - round_num - 1
+            rounds_left = max_rounds - round_num - 1
             conversation = (
                 conversation
                 + f"\n\nRound {round_num+1} output:\n{cleaned}"
@@ -104,7 +102,7 @@ class Commander:
 
         return {
             "result": f"Max rounds reached.\n{accumulated[-1000:]}",
-            "rounds": _MAX_ROUNDS,
+            "rounds": max_rounds,
             "context": accumulated,
         }
 

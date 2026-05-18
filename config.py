@@ -10,3 +10,5 @@ MODELS = {
 }
 
 SESSION_DIR = "./sessions"
+
+MAX_ROUNDS = 10  # commander dispatch rounds; override per-run with --rounds
