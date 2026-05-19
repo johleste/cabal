@@ -243,10 +243,40 @@ conda install   brew install    snap install    pipx install
 **2. Tools folder only.**
 The subprocess `PATH` is set exclusively to `./tools/`. Scripts may only
 invoke external binaries placed there. System binaries (`curl`, `nmap`,
-`jq`, etc.) are not accessible unless copied or symlinked into `./tools/`.
+`jq`, etc.) are not accessible unless copied or symlinked into the
+appropriate subfolder.
 
-Place any tool a script needs in `./tools/` before running Cabal.
-The `./tools/` folder is gitignored — its contents stay local.
+---
+
+## Tools Folder
+
+External binaries available to Cabal scripts go in `./tools/`. The folder
+structure is organised by category:
+
+```
+tools/
+  OSINT/       — reconnaissance and intelligence gathering tools
+  Pentest/     — exploitation and assessment tools
+  Network/     — network scanning, capture, and analysis tools
+  Code/        — code analysis, decompilers, linters
+  Payloads/    — payload generators and delivery tools
+```
+
+**To make a tool available to Cabal:**
+
+```bash
+cp $(which nmap) tools/Network/
+cp $(which jq)   tools/OSINT/
+```
+
+Or symlink:
+
+```bash
+ln -s $(which nmap) tools/Network/nmap
+```
+
+The folder structure is tracked in git. **Contents are not** — every file
+inside `tools/` and its subfolders is gitignored and stays local.
 
 ---
 
