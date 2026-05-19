@@ -322,15 +322,40 @@ a `tools/` subfolder so Cabal scripts can invoke them:
 go-adapter build scanner.go -o tools/Network/scanner
 ```
 
-**Building both adapters:**
+**Building the adapters:**
+
+Java adapter — requires JDK 17+:
 
 ```bash
+# Check version
+javac -version   # must be 17+
+
+# Build and install to tools/Code/
 ./java/build.sh
-./go/build.sh
+
+# Installs:
+#   tools/Code/adapter          ← shell wrapper
+#   tools/Code/CabalAdapter.jar ← compiled jar
 ```
 
-Both translators call the local Ollama instance (`deepseek-coder-v2`).
-Set `OLLAMA_BASE_URL` to override.
+Go adapter — requires Go 1.21+:
+
+```bash
+# Check version
+go version   # must be 1.21+
+
+# Build and install to tools/Code/
+./go/build.sh
+
+# Installs:
+#   tools/Code/go-adapter   ← static binary (no runtime needed)
+```
+
+Both adapters call the local Ollama instance (`deepseek-coder-v2`) for
+translation. Set `OLLAMA_BASE_URL` to override the endpoint.
+
+Compiled outputs go into `tools/Code/` which is gitignored — rebuild after
+each clone with the scripts above.
 
 ---
 
@@ -484,9 +509,16 @@ Total: ~22 GB. Ollama must be running (`ollama serve`) before use.
 **4. Build adapters (optional):**
 
 ```bash
-./java/build.sh    # requires JDK 17+
-./go/build.sh      # requires Go 1.21+
+# Java adapter — requires JDK 17+
+./java/build.sh
+
+# Go adapter — requires Go 1.21+
+./go/build.sh
 ```
+
+Compiled outputs land in `tools/Code/` (gitignored). Rebuild after each
+clone. See the [Built-in Adapters](#built-in-adapters) section for full
+build details and prerequisites.
 
 ---
 
