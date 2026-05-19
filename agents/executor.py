@@ -129,8 +129,10 @@ def _extract_code(text: str) -> tuple[str, str]:
 
 
 def _restricted_env() -> dict:
-    """Build a subprocess environment where PATH contains only ./tools/.
-    Scripts may only invoke binaries placed in the tools folder."""
+    """Build a subprocess environment where PATH contains ./tools/ and all
+    immediate subdirectories. Scripts may only invoke binaries placed there."""
     env = os.environ.copy()
-    env["PATH"] = str(_TOOLS_DIR.resolve())
+    root = _TOOLS_DIR.resolve()
+    dirs = [str(root)] + [str(d) for d in sorted(root.iterdir()) if d.is_dir()]
+    env["PATH"] = ":".join(dirs)
     return env
