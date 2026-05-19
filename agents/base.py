@@ -10,6 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from config import OLLAMA_BASE_URL, MODELS
 from agents import llmlog
+import rules as _rules
 
 
 class BaseAgent:
@@ -21,10 +22,12 @@ class BaseAgent:
         return MODELS.get(self.role, "llama3.1:latest")
 
     def query(self, prompt: str, context: str = "") -> str:
+        p = _rules.preamble()
+        system = f"{p}\n{self.system_prompt}" if p else self.system_prompt
         if context:
-            full = f"{self.system_prompt}\n\nContext:\n{context}\n\nInput:\n{prompt}"
+            full = f"{system}\n\nContext:\n{context}\n\nInput:\n{prompt}"
         else:
-            full = f"{self.system_prompt}\n\nInput:\n{prompt}"
+            full = f"{system}\n\nInput:\n{prompt}"
 
         llmlog.agent_call(self.role, self.model, prompt)
         t0 = time.monotonic()

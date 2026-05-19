@@ -20,6 +20,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from config import OLLAMA_BASE_URL, MODELS, MAX_ROUNDS as _DEFAULT_MAX_ROUNDS
 from agents import llmlog
+import rules as _rules
 
 _SYSTEM = """\
 You are the Commander — the orchestrating intelligence of Cabal, a local multi-agent AI system.
@@ -69,9 +70,11 @@ class Commander:
         last_exit_code: int | None = None
         last_error: str | None = None
 
+        p = _rules.preamble()
+        system = f"{p}\n{_SYSTEM}" if p else _SYSTEM
         for round_num in range(max_rounds):
             llmlog.commander_start(round_num)
-            raw = self._query(f"{_SYSTEM}\n\n{conversation}")
+            raw = self._query(f"{system}\n\n{conversation}")
             llmlog.commander_round_end()
             cleaned = _strip_thinking(raw)
 
@@ -180,8 +183,10 @@ class Commander:
 
     def ask(self, question: str) -> str:
         """Direct question — commander reasons without dispatching agents."""
+        p = _rules.preamble()
+        system = f"{p}\n{_SYSTEM}" if p else _SYSTEM
         llmlog.commander_start(0)
-        raw = self._query(f"{_SYSTEM}\n\nQuestion: {question}")
+        raw = self._query(f"{system}\n\nQuestion: {question}")
         llmlog.commander_round_end()
         result = _strip_thinking(raw)
         result = re.sub(r"^FINAL:\s*", "", result, flags=re.IGNORECASE).strip()
