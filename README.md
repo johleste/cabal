@@ -278,6 +278,60 @@ ln -s $(which nmap) tools/Network/nmap
 The folder structure is tracked in git. **Contents are not** — every file
 inside `tools/` and its subfolders is gitignored and stays local.
 
+### Built-in Adapters
+
+Two adapters ship with Cabal and live in `tools/Code/` after building.
+They bridge language translation and endpoint interaction for scripts
+running under Cabal's sandboxed executor.
+
+#### `adapter` — Java Adapter
+
+Translates between Python and Java, and calls Java endpoints.
+Requires JDK 17+. Build with `./java/build.sh`.
+
+```
+adapter py2java <file.py> [-o out.java]     Translate Python → Java
+adapter java2py <file.java> [-o out.py]     Translate Java → Python
+adapter call <url> [METHOD] [json_body]     HTTP call to a Java endpoint
+adapter probe <url>                         Probe endpoint reachability and headers
+```
+
+Useful for interacting with Spring Boot, Tomcat, JMX, and other JVM services.
+
+#### `go-adapter` — Go Adapter
+
+Translates between Python/Java and Go, compiles and runs Go code, and calls
+endpoints. Compiles to a static binary — no runtime required.
+Requires Go 1.21+. Build with `./go/build.sh`.
+
+```
+go-adapter py2go   <file.py>   [-o out.go]     Translate Python → Go
+go-adapter go2py   <file.go>   [-o out.py]     Translate Go → Python
+go-adapter java2go <file.java> [-o out.go]     Translate Java → Go
+go-adapter go2java <file.go>   [-o out.java]   Translate Go → Java
+go-adapter run     <file.go>   [-- args...]    Compile and run a Go file
+go-adapter build   <file.go>   [-o binary]     Compile Go to a binary
+go-adapter call    <url>       [METHOD] [body] HTTP call to an endpoint
+go-adapter probe   <url>                       Probe endpoint reachability
+```
+
+`build` is particularly useful for compiling Go security tools directly into
+a `tools/` subfolder so Cabal scripts can invoke them:
+
+```bash
+go-adapter build scanner.go -o tools/Network/scanner
+```
+
+**Building both adapters:**
+
+```bash
+./java/build.sh
+./go/build.sh
+```
+
+Both translators call the local Ollama instance (`deepseek-coder-v2`).
+Set `OLLAMA_BASE_URL` to override.
+
 ---
 
 ## Sessions and Output Files
@@ -426,6 +480,13 @@ OLLAMA_MODELS="$(pwd)/models" ./pull_models.sh
 | `dolphin-llama3:8b` | Analyst — synthesis, report writing | 4.7 GB |
 
 Total: ~22 GB. Ollama must be running (`ollama serve`) before use.
+
+**4. Build adapters (optional):**
+
+```bash
+./java/build.sh    # requires JDK 17+
+./go/build.sh      # requires Go 1.21+
+```
 
 ---
 
