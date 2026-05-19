@@ -509,11 +509,12 @@ Total: ~22 GB. Ollama must be running (`ollama serve`) before use.
 **4. Build adapters (optional):**
 
 ```bash
-# Java adapter — requires JDK 17+
-./java/build.sh
+# Build all adapters at once
+./rebuild.sh
 
-# Go adapter — requires Go 1.21+
-./go/build.sh
+# Or individually:
+./java/build.sh   # Java adapter — requires JDK 17+
+./go/build.sh     # Go adapter  — requires Go 1.21+
 ```
 
 Compiled outputs land in `tools/Code/` (gitignored). Rebuild after each
@@ -540,6 +541,7 @@ cabal analyse "task"                  Direct to Analyst
 cabal pull                            Print latest session
 cabal pull --path                     Print session file path
 ./c.sh quiet run "task"               Run with LLM logging suppressed
+./rebuild.sh                          Rebuild all adapters (Java + Go)
 ```
 
 ---
