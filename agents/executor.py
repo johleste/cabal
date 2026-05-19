@@ -6,12 +6,17 @@ saves it to a session-scoped file, executes it, and returns structured results.
 Generated code is kept at sessions/<stamp>_code_NNN.<ext> for review.
 Commander should dispatch here after CODER writes a script, then re-dispatch
 CODER with the error output if exit_code != 0.
+
+Sandbox rules (always enforced):
+  - No install commands (pip, apt, npm, etc.) — rejected before execution
+  - PATH is restricted to ./tools/ — scripts may only invoke binaries placed there
 """
 import os
 import re
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import session
@@ -21,11 +26,12 @@ from agents import llmlog
 # Set to True at runtime (from --confirm flag) to prompt before each execution.
 CONFIRM = False
 
+# Full paths so interpreter lookup doesn't depend on PATH.
 _LANG_CMDS = {
-    "python":  ["python3"],
-    "python3": ["python3"],
-    "bash":    ["bash"],
-    "sh":      ["sh"],
+    "python":  [sys.executable],
+    "python3": [sys.executable],
+    "bash":    ["/bin/bash"],
+    "sh":      ["/bin/sh"],
 }
 _LANG_EXTS = {
     "python":  ".py",
@@ -33,8 +39,18 @@ _LANG_EXTS = {
     "bash":    ".sh",
     "sh":      ".sh",
 }
-_DEFAULT_CMD = ["python3"]
+_DEFAULT_CMD = [sys.executable]
 _DEFAULT_EXT = ".py"
+
+# Install commands that are never permitted.
+_BLOCKED = re.compile(
+    r"\b(pip3?\s+install|apt(?:-get)?\s+install|npm\s+install|yarn\s+add"
+    r"|cargo\s+install|gem\s+install|conda\s+install|brew\s+install"
+    r"|snap\s+install|pipx\s+install)\b",
+    re.IGNORECASE,
+)
+
+_TOOLS_DIR = Path(__file__).parent.parent / "tools"
 
 
 class ExecutorAgent:
@@ -46,6 +62,14 @@ class ExecutorAgent:
 
         if not code:
             return "[EXECUTOR] No fenced code block found. CODER must wrap the script in a fenced block."
+
+        blocked = _BLOCKED.search(code)
+        if blocked:
+            return (
+                f"[EXECUTOR] Blocked: install commands are not permitted. "
+                f"Found: '{blocked.group(0).strip()}'. "
+                f"Use only tools available in ./tools/."
+            )
 
         cmd = _LANG_CMDS.get(lang, _DEFAULT_CMD)
         ext = _LANG_EXTS.get(lang, _DEFAULT_EXT)
@@ -75,6 +99,7 @@ class ExecutorAgent:
                 capture_output=True,
                 text=True,
                 timeout=EXECUTOR_TIMEOUT,
+                env=_restricted_env(),
             )
             elapsed = time.monotonic() - t0
             parts = [f"exit_code: {proc.returncode}", f"elapsed: {elapsed:.1f}s"]
@@ -101,3 +126,11 @@ def _extract_code(text: str) -> tuple[str, str]:
         return "", ""
     m = matches[-1]
     return m.group(2).strip(), m.group(1).lower()
+
+
+def _restricted_env() -> dict:
+    """Build a subprocess environment where PATH contains only ./tools/.
+    Scripts may only invoke binaries placed in the tools folder."""
+    env = os.environ.copy()
+    env["PATH"] = str(_TOOLS_DIR.resolve())
+    return env

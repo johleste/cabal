@@ -45,6 +45,13 @@ Rules:
   - When writing and testing code: dispatch CODER to write, then EXECUTOR to run it.
     If exit_code != 0, dispatch CODER again with the error output to fix it.
     Repeat until exit_code is 0 or you exhaust your rounds.
+
+Sandbox constraints (strictly enforced by EXECUTOR — violations will be rejected):
+  - NO install commands of any kind: pip, pip3, apt, apt-get, npm, yarn, cargo,
+    gem, conda, brew, snap, pipx. Do not ask CODER to write code that installs.
+  - External tools and binaries are ONLY available from the ./tools/ folder.
+    Do not call system binaries (curl, nmap, etc.) unless they exist in ./tools/.
+  - Use Python standard library or tools already present in ./tools/ for all tasks.
 """
 
 
