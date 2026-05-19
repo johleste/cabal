@@ -226,6 +226,28 @@ before running. Answering `n` reports cancellation back to Commander.
 Timeout is 30 seconds by default. Override with `--timeout N` or permanently
 in `config.py` via `EXECUTOR_TIMEOUT`.
 
+### Sandbox Rules
+
+Two rules are always enforced — they cannot be overridden at runtime:
+
+**1. No install commands.**
+The following are blocked before execution. Any script containing them is
+rejected and the error is returned to Commander:
+
+```
+pip install     pip3 install    apt install     apt-get install
+npm install     yarn add        cargo install   gem install
+conda install   brew install    snap install    pipx install
+```
+
+**2. Tools folder only.**
+The subprocess `PATH` is set exclusively to `./tools/`. Scripts may only
+invoke external binaries placed there. System binaries (`curl`, `nmap`,
+`jq`, etc.) are not accessible unless copied or symlinked into `./tools/`.
+
+Place any tool a script needs in `./tools/` before running Cabal.
+The `./tools/` folder is gitignored — its contents stay local.
+
 ---
 
 ## Sessions and Output Files
