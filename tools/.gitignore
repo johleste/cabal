@@ -1,2 +1,7 @@
 *
 !.gitignore
+!OSINT/
+!Pentest/
+!Code/
+!Network/
+!Payloads/
