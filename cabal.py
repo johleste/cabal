@@ -20,26 +20,43 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 import session
+import agents.executor as _executor_mod
 from agents.commander import Commander
 from agents.researcher import ResearcherAgent
 from agents.coder import CoderAgent
 from agents.recon import ReconAgent
 from agents.analyst import AnalystAgent
+from agents.executor import ExecutorAgent
 
 _AGENTS = {
     "RESEARCHER": ResearcherAgent(),
     "CODER":      CoderAgent(),
     "RECON":      ReconAgent(),
     "ANALYST":    AnalystAgent(),
+    "EXECUTOR":   ExecutorAgent(),
 }
 _COMMANDER = Commander()
 
 
 def cmd_run(args):
     task = " ".join(args.task)
+    if args.confirm:
+        _executor_mod.CONFIRM = True
+    if args.timeout:
+        import config as _cfg
+        _cfg.EXECUTOR_TIMEOUT = args.timeout
+    max_attempts = None if args.attempts == 0 else args.attempts
     session.start("run", task)
-    result = _COMMANDER.run(task, _AGENTS, max_rounds=args.rounds)
-    session.finish(result["result"])
+    result = _COMMANDER.run_loop(
+        task, _AGENTS,
+        max_rounds=args.rounds,
+        max_attempts=max_attempts,
+        use_claude=args.claude,
+    )
+    if result.get("success"):
+        session.finish(result["result"])
+    else:
+        session.fail(task, result)
     print(result["result"])
 
 
@@ -94,6 +111,14 @@ def cmd_pull(args):
         print(path.read_text())
 
 
+def cmd_help(args):
+    readme = Path(__file__).parent / "README.md"
+    if readme.exists():
+        print(readme.read_text())
+    else:
+        print("[cabal] README.md not found")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="cabal",
@@ -105,7 +130,11 @@ def main():
 
     run_p = sub.add_parser("run", help="Commander orchestrates agents")
     run_p.add_argument("task", nargs="+")
-    run_p.add_argument("--rounds", type=int, default=None, help="Max commander rounds (default: config.MAX_ROUNDS)")
+    run_p.add_argument("--rounds", type=int, default=None, help="Max commander rounds per attempt (default: config.MAX_ROUNDS)")
+    run_p.add_argument("--attempts", type=int, default=1, help="Max retry attempts (0 = unlimited, default: 1)")
+    run_p.add_argument("--claude", action="store_true", help="Consult Claude Code when stuck (same error across 2 attempts)")
+    run_p.add_argument("--confirm", action="store_true", help="Prompt before EXECUTOR runs each script")
+    run_p.add_argument("--timeout", type=int, default=None, help="EXECUTOR script timeout in seconds (default: config.EXECUTOR_TIMEOUT)")
     run_p.set_defaults(func=cmd_run)
 
     ask_p = sub.add_parser("ask", help="Commander answers directly")
@@ -131,6 +160,9 @@ def main():
     pull_p = sub.add_parser("pull", help="Print the latest session output")
     pull_p.add_argument("--path", action="store_true", help="Print file path only")
     pull_p.set_defaults(func=cmd_pull)
+
+    help_p = sub.add_parser("help", help="Print full documentation")
+    help_p.set_defaults(func=cmd_help)
 
     args = parser.parse_args()
     args.func(args)

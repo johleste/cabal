@@ -12,8 +12,11 @@ CABAL_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 PYTHON="${CABAL_PYTHON:-python3}"
 
 case "${1:-}" in
-    run|ask|research|code|recon|analyse|pull)
+    run|ask|research|code|recon|analyse|pull|help)
         exec "$PYTHON" "$CABAL_DIR/cabal.py" "$@"
+        ;;
+    --help|-h)
+        exec "$PYTHON" "$CABAL_DIR/cabal.py" help
         ;;
     *)
         exec "$PYTHON" "$CABAL_DIR/cabal.py" run "$@"

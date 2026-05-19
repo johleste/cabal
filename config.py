@@ -11,4 +11,5 @@ MODELS = {
 
 SESSION_DIR = "./sessions"
 
-MAX_ROUNDS = 10  # commander dispatch rounds; override per-run with --rounds
+MAX_ROUNDS = 10       # commander dispatch rounds; override per-run with --rounds
+EXECUTOR_TIMEOUT = 30 # seconds before executor kills a script; override with --timeout

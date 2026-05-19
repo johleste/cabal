@@ -80,3 +80,35 @@ def commander_dispatch(agent: str, prompt: str):
 def error(role: str, msg: str):
     _err(f"{_RED}[{role} error]{_RESET} {msg}")
     _ses(f"[{role} error] {msg}\n")
+
+
+def retry_attempt(attempt: int):
+    _err(f"\n{_RED}{'━' * 55}{_RESET}")
+    _err(f"{_RED}  RETRYING — attempt {attempt}{_RESET}")
+    _err(f"{_RED}{'━' * 55}{_RESET}")
+    _ses(f"\n{'━' * 55}\n  RETRYING — attempt {attempt}\n{'━' * 55}\n")
+
+
+def consult_start():
+    _err(f"\n{_BOLD}{_YELLOW}[cabal] consulting Claude...{_RESET}")
+    _ses("\n[consulting Claude...]\n")
+
+
+def consult_end(success: bool):
+    if success:
+        _err(f"{_GREEN}[cabal] consultation received{_RESET}")
+        _ses("[consultation received]\n")
+    else:
+        _err(f"{_RED}[cabal] consultation failed{_RESET}")
+        _ses("[consultation failed]\n")
+
+
+def consult_backoff(attempt: int, delay: float):
+    _err(f"{_YELLOW}[cabal] rate limited — backing off {delay:.0f}s (attempt {attempt}/{5}){_RESET}")
+    _ses(f"[rate limited — backing off {delay:.0f}s (attempt {attempt}/5)]\n")
+
+
+def consult_scheduled(retry_time, method: str):
+    ts = retry_time.strftime("%Y-%m-%d %H:%M UTC")
+    _err(f"{_GREEN}[cabal] retry scheduled via {method} at {ts} — exiting{_RESET}")
+    _ses(f"[retry scheduled via {method} at {ts}]\n")

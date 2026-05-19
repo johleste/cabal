@@ -28,21 +28,7 @@ case "$CMD" in
         ;;
 
     help|--help|-h)
-        cat <<'EOF'
-c.sh — Cabal multi-agent AI shell
-
-  ./c.sh run "task"         Commander orchestrates agents to complete a task
-  ./c.sh ask "question"     Commander answers directly (no agent dispatch)
-  ./c.sh research "topic"   Direct to Researcher (deepseek-coder-v2)
-  ./c.sh code "task"        Direct to Coder (deepseek-coder-v2)
-  ./c.sh recon "scenario"   Direct to Recon (wizard-vicuna-uncensored)
-  ./c.sh analyse "task"     Direct to Analyst (dolphin-llama3)
-  ./c.sh pull               Print the latest session file (or mid-run progress)
-  ./c.sh pull --path        Print the session file path only
-  ./c.sh quiet <cmd> [args] Run any command with LLM logging suppressed
-
-LLM output is logged to stderr by default. Set CABAL_QUIET=1 to suppress.
-EOF
+        cat "$CABAL_DIR/README.md"
         ;;
 
     *)
