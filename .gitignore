@@ -4,3 +4,5 @@ __pycache__/
 sessions/*.json
 sessions/*.txt
 .env
+RULES.md
+approved_targets.txt
